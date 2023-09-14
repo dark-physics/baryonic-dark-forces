@@ -254,6 +254,19 @@ def dsig_dcosth_omega(W,costh,params):
 def dsig_dcosth_phi(W,costh,params):
     return dsig_dcosth(W,costh,params,m_phi,dsig_dt_phi)
 
+def dsig_dcosth_omega_plus(W,costh,params):
+    return dsig_dcosth(W,costh,params,m_omega,dsig_dt_omega_plus)
+
+def dsig_dcosth_phi_plus(W,costh,params):
+    return dsig_dcosth(W,costh,params,m_phi,dsig_dt_phi_plus)
+
+def dsig_dcosth_omega_minus(W,costh,params):
+    return dsig_dcosth(W,costh,params,m_omega,dsig_dt_omega_minus)
+
+def dsig_dcosth_phi_minus(W,costh,params):
+    return dsig_dcosth(W,costh,params,m_phi,dsig_dt_phi_minus)
+
+
 # General quantile function
 def quantile(func,chain,q,*args):
     
@@ -318,7 +331,7 @@ def sig(func,W,params,mV):
             # return quad(f,tmin,tmax,epsrel=1e-14,epsabs=1e-14)[0]
             return integrate(f,tmin,tmax)
     else:
-        return np.array([sigt(func,Wi,params,mV) for Wi in W])
+        return np.array([sig(func,Wi,params,mV) for Wi in W])
     
 def sig_omega(W,params):
     return sig(dsig_dt_omega,W,params,m_omega)
@@ -434,6 +447,15 @@ def sig_B_minus(W,mB,params):
 
 def sig_B_quantile(W,mB,chain,q):
     return quantile(sig_B,chain,q,W,mB)
+
+def dsig_dcosth_B(W,costh,params,mB):
+    return dsig_dcosth(W,costh,params,mB,dsig_dt_B)
+
+def dsig_dcosth_B_plus(W,costh,params,mB):
+    return dsig_dcosth(W,costh,params,mB,dsig_dt_B_plus)
+
+def dsig_dcosth_B_minus(W,costh,params,mB):
+    return dsig_dcosth(W,costh,params,mB,dsig_dt_B_minus)
 
 def dsigT_dt_B_plus(W,t,Q2,params,mB):
     
