@@ -1,3 +1,4 @@
+import numpy as np
 import cross_sections as cs
 
 # Default parameters: taken from Ben Othman et al
