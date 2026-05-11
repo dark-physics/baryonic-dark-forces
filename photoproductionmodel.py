@@ -277,17 +277,26 @@ def dsig_dcosth(W,costh,params,mV,dsig_dt_func):
 def dsig_dcosth_omega(W,costh,params):
     return dsig_dcosth(W,costh,params,m_omega,dsig_dt_omega)
 
+def dsig_dcosth_rho(W,costh,params):
+    return dsig_dcosth(W,costh,params,m_rho,dsig_dt_rho)
+
 def dsig_dcosth_phi(W,costh,params):
     return dsig_dcosth(W,costh,params,m_phi,dsig_dt_phi)
 
 def dsig_dcosth_omega_plus(W,costh,params):
     return dsig_dcosth(W,costh,params,m_omega,dsig_dt_omega_plus)
 
+def dsig_dcosth_rho_plus(W,costh,params):
+    return dsig_dcosth(W,costh,params,m_rho,dsig_dt_rho_plus)
+
 def dsig_dcosth_phi_plus(W,costh,params):
     return dsig_dcosth(W,costh,params,m_phi,dsig_dt_phi_plus)
 
 def dsig_dcosth_omega_minus(W,costh,params):
     return dsig_dcosth(W,costh,params,m_omega,dsig_dt_omega_minus)
+
+def dsig_dcosth_rho_minus(W,costh,params):
+    return dsig_dcosth(W,costh,params,m_rho,dsig_dt_rho_minus)
 
 def dsig_dcosth_phi_minus(W,costh,params):
     return dsig_dcosth(W,costh,params,m_phi,dsig_dt_phi_minus)
@@ -967,8 +976,14 @@ def dsigT_dt_rho(W,t,Q2,params):
 def dsigT_dt_phi(W,t,Q2,params):
     return dsigT_dt_phi_plus(W,t,Q2,params) + dsigT_dt_phi_minus(W,t,Q2,params)
 
-def dsigL_dt_B(W,t,Q2,params,mB):
-    return dsigL_dt_B_plus(W,t,Q2,params,mB) + dsigL_dt_B_minus(W,t,Q2,params,mB)
+def dsigL_dt_omega(W,t,Q2,params):
+    return dsigL_dt_omega_plus(W,t,Q2,params) + dsigL_dt_omega_minus(W,t,Q2,params)
+
+def dsigL_dt_rho(W,t,Q2,params):
+    return dsigL_dt_rho_plus(W,t,Q2,params) + dsigL_dt_rho_minus(W,t,Q2,params)
+
+def dsigL_dt_phi(W,t,Q2,params):
+    return dsigL_dt_phi_plus(W,t,Q2,params) + dsigL_dt_phi_minus(W,t,Q2,params)
 
 def dsigT_dt_B(W,t,Q2,params,mB):
     return dsigT_dt_B_plus(W,t,Q2,params,mB) + dsigT_dt_B_minus(W,t,Q2,params,mB)
@@ -976,11 +991,11 @@ def dsigT_dt_B(W,t,Q2,params,mB):
 def dsigL_dt_B(W,t,Q2,params,mB):
     return dsigL_dt_B_plus(W,t,Q2,params,mB) + dsigL_dt_B_minus(W,t,Q2,params,mB)
     
-def sig_electro(func,W,Q2,params,mB):
+def sig_electro(func,W,Q2,params,mV):
        
     if (np.ndim(W) == 0) and (np.ndim(Q2) == 0):
     
-        if (W < mB + mp):
+        if (W < mV + mp):
             return 0
 
         # Initial photon kinematics
@@ -988,27 +1003,34 @@ def sig_electro(func,W,Q2,params,mB):
         q1 = np.sqrt(Eq1**2 + Q2)
 
         # Final B kinematics
-        Eq2 = 0.5*(W**2 - mp**2 + mB**2)/W
-        q2 = np.sqrt(Eq2**2 - mB**2)
+        Eq2 = 0.5*(W**2 - mp**2 + mV**2)/W
+        q2 = np.sqrt(Eq2**2 - mV**2)
 
         # Compute t
-        tmin = mB**2 - Q2 - 2*Eq1*Eq2 - 2*q1*q2
-        tmax = mB**2 - Q2 - 2*Eq1*Eq2 + 2*q1*q2
+        tmin = mV**2 - Q2 - 2*Eq1*Eq2 - 2*q1*q2
+        tmax = mV**2 - Q2 - 2*Eq1*Eq2 + 2*q1*q2
     
-        f = lambda t: func(W,t,Q2,params,mB)
-        
         # Calculate integral over t
+        try:
+            f = lambda t: func(W,t,Q2,params,mV)
+            return integrate(f,tmin,tmax)
+        
+        except:
+            f = lambda t: func(W,t,Q2,params)
+            return integrate(f,tmin,tmax)
+            
+            
         return integrate(f,tmin,tmax)
 
     # Other cases to handle array inputs
     elif (np.ndim(Q2) == 0):
-        return np.array([sig_electro(func,Wi,Q2,params,mB) for Wi in W])
+        return np.array([sig_electro(func,Wi,Q2,params,mV) for Wi in W])
 
     elif (np.ndim(W) == 0):
-        return np.array([sig_electro(func,W,Q2i,params,mB) for Q2i in Q2])
+        return np.array([sig_electro(func,W,Q2i,params,mV) for Q2i in Q2])
 
     else:
-        return np.array([sig_electro(func,Wi,Q2i,params,mB) for Wi,Q2i in zip(W,Q2)])
+        return np.array([sig_electro(func,Wi,Q2i,params,mV) for Wi,Q2i in zip(W,Q2)])
 
 def sigT_B_plus(W,Q2,mB,params):
     return sig_electro(dsigT_dt_B_plus,W,Q2,params,mB)
@@ -1063,23 +1085,23 @@ def sigL_B_quantile(W,Q2,mB,chain,q):
 def epsilon(Q2,y):
     return Gamma_L(Q2,y) / Gamma_T(Q2,y)
 
-def sigma_virtual_omega(s_tot,W,Q2,params):
+def sig_virtual_omega(s_tot,W,Q2,params):
 
     y = (W**2 - mp**2 + Q2) / (s_tot - mp**2)
 
-    return sigmaT_omega(W,Q2,params) + epsilon(Q2,y) * sigmaL_omega(W,Q2,params)
+    return sigT_omega(W,Q2,params) + epsilon(Q2,y) * sigL_omega(W,Q2,params)
 
-def sigma_virtual_rho(s_tot,W,Q2,params):
-
-    y = (W**2 - mp**2 + Q2) / (s_tot - mp**2)
-
-    return sigmaT_rho(W,Q2,params) + epsilon(Q2,y) * sigmaL_rho(W,Q2,params)
-
-def sigma_virtual_phi(s_tot,W,Q2,params):
+def sig_virtual_rho(s_tot,W,Q2,params):
 
     y = (W**2 - mp**2 + Q2) / (s_tot - mp**2)
 
-    return sigmaT_phi(W,Q2,params) + epsilon(Q2,y) * sigmaL_phi(W,Q2,params)
+    return sigT_rho(W,Q2,params) + epsilon(Q2,y) * sigL_rho(W,Q2,params)
+
+def sig_virtual_phi(s_tot,W,Q2,params):
+
+    y = (W**2 - mp**2 + Q2) / (s_tot - mp**2)
+
+    return sigT_phi(W,Q2,params) + epsilon(Q2,y) * sigL_phi(W,Q2,params)
 
 # Organize cross sections in a class
 
@@ -1107,53 +1129,53 @@ default_params[17] = 7.40 # b_Pom_rho_rho
 default_params[18] = 0.2 # a_Pom_rho_rho
 default_params[19] = 7.4 # B_rho (form factor slope)
 
-class model:
+# class model:
 
-    def __init__(self,params=default_params):
+#     def __init__(self,params=default_params):
         
-        # Phenomenological model parameters
-        self.params = params
+#         # Phenomenological model parameters
+#         self.params = params
 
-    # Real photoproduction cross sections
-    # photon + proton -> vector meson + proton
-    # for vector mesons = omega, rho^0, phi
+#     # Real photoproduction cross sections
+#     # photon + proton -> vector meson + proton
+#     # for vector mesons = omega, rho^0, phi
     
-    def dsig_dt_omega(self,W,t):
-        return cs.dsig_dt_omega(W,t,self.params)
+#     def dsig_dt_omega(self,W,t):
+#         return cs.dsig_dt_omega(W,t,self.params)
 
-    def dsig_dt_rho(self,W,t):
-        return cs.dsig_dt_rho(W,t,self.params)
+#     def dsig_dt_rho(self,W,t):
+#         return cs.dsig_dt_rho(W,t,self.params)
 
-    def dsig_dt_phi(self,W,t):
-        return cs.dsig_dt_phi(W,t,self.params)
+#     def dsig_dt_phi(self,W,t):
+#         return cs.dsig_dt_phi(W,t,self.params)
 
-    def dsig_dcosth_omega(self,W,costh):
-        return cs.dsig_dcosth_omega(W,costh,self.params)
+#     def dsig_dcosth_omega(self,W,costh):
+#         return cs.dsig_dcosth_omega(W,costh,self.params)
 
-    def dsig_dcosth_rho(self,W,costh):
-        return cs.dsig_dcosth_rho(W,costh,self.params)
+#     def dsig_dcosth_rho(self,W,costh):
+#         return cs.dsig_dcosth_rho(W,costh,self.params)
 
-    def dsig_dcosth_phi(self,W,costh):
-        return cs.dsig_dcosth_phi(W,costh,self.params)
+#     def dsig_dcosth_phi(self,W,costh):
+#         return cs.dsig_dcosth_phi(W,costh,self.params)
 
-    def sig_omega(self,W):
-        return cs.sig_omega(W,self.params)
+#     def sig_omega(self,W):
+#         return cs.sig_omega(W,self.params)
 
-    def sig_rho(self,W):
-        return cs.sig_rho(W,self.params)
+#     def sig_rho(self,W):
+#         return cs.sig_rho(W,self.params)
 
-    def sig_phi(self,W):
-        return cs.sig_phi(W,self.params)
+#     def sig_phi(self,W):
+#         return cs.sig_phi(W,self.params)
 
-    # Virtual photoproduction cross sections via 
-    # photon^* + proton -> vector meson + proton
-    # for vector mesons = omega, rho^0, phi
+#     # Virtual photoproduction cross sections via 
+#     # photon^* + proton -> vector meson + proton
+#     # for vector mesons = omega, rho^0, phi
     
-    def sigv_omega(self,s_tot,W,Q2):
-        return cs.sig_virtual_omega(s_tot,W,Q2,self.params)
+#     def sigv_omega(self,s_tot,W,Q2):
+#         return cs.sig_virtual_omega(s_tot,W,Q2,self.params)
 
-    def sigv_rho(self,s_tot,W,Q2):
-        return cs.sig_virtual_rho(s_tot,W,Q2,self.params)
+#     def sigv_rho(self,s_tot,W,Q2):
+#         return cs.sig_virtual_rho(s_tot,W,Q2,self.params)
 
-    def sigv_phi(self,s_tot,W,Q2):
-        return cs.sig_virtual_phi(s_tot,W,Q2,self.params)
+#     def sigv_phi(self,s_tot,W,Q2):
+#         return cs.sig_virtual_phi(s_tot,W,Q2,self.params)
