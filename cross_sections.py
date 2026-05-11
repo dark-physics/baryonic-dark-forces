@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 from scipy.integrate import quad, solve_ivp
 
 # Function used for integration
@@ -57,7 +56,7 @@ units = 389.3793656 # Conversion from 1/GeV^2 to mu_barn
 #  params[9] = b_Pom_phi_phi
 #  params[10] = B_omega (form factor slope)
 #  params[11] = B_phi (form factor slope)
-#  params[12] = alpha_Pom_prime (Pomeron trajectory slope)
+#  params[12] = alpha_Pom (Pomeron trajectory)
 #  params[13] = a_Pom_omega_omega
 #  params[14] = a_Pom_phi_phi 
 #  params[15] = Lambda_pi_gam_rho
@@ -65,7 +64,7 @@ units = 389.3793656 # Conversion from 1/GeV^2 to mu_barn
 #  params[17] = b_Pom_rho_rho
 #  params[18] = a_Pom_rho_rho
 #  params[19] = B_rho (form factor slope)
- 
+
 # Differential cross sections
 # Note: plus = pomeron exchange
 #       minus = pseudoscalar exchange
@@ -75,6 +74,9 @@ units = 389.3793656 # Conversion from 1/GeV^2 to mu_barn
 # Photoproduction
 
 def dsig_dt_omega_plus(W,t,params):
+
+    if W < m_omega + mp:
+        return 0.0
     
     s = W**2
     
@@ -100,6 +102,9 @@ def dsig_dt_omega_plus(W,t,params):
 
 def dsig_dt_rho_plus(W,t,params):
     
+    if W < m_rho + mp:
+        return 0.0
+
     s = W**2
     
     # Changed to include rho meson
@@ -124,7 +129,10 @@ def dsig_dt_rho_plus(W,t,params):
     return dsig_dt * units
 
 def dsig_dt_phi_plus(W,t,params):
-    
+
+    if W < m_phi + mp:
+        return 0.0
+
     s = W**2
     
     a_P_phi_phi = params[14]
@@ -148,7 +156,10 @@ def dsig_dt_phi_plus(W,t,params):
     return dsig_dt * units
 
 def dsig_dt_omega_minus(W,t,params):
-    
+
+    if W < m_omega + mp:
+        return 0.0
+
     s = W**2
     
     g_pi_NN = params[0]
@@ -172,7 +183,10 @@ def dsig_dt_omega_minus(W,t,params):
     return dsig_dt * units
 
 def dsig_dt_phi_minus(W,t,params):
-    
+
+    if W < m_phi + mp:
+        return 0.0
+
     s = W**2
     
     g_pi_NN = params[0]
@@ -196,7 +210,10 @@ def dsig_dt_phi_minus(W,t,params):
     return dsig_dt * units
 
 def dsig_dt_rho_minus(W,t,params):
-    
+
+    if W < m_rho + mp:
+        return 0.0
+
     s = W**2
     
     g_pi_NN = params[0]
@@ -373,7 +390,10 @@ def sig_rho_quantile(W,chain,q):
     return quantile(sig_rho,chain,q,W)
 
 def dsig_dt_B_plus(W,t,params,mB):
-    
+
+    if W < mB + mp:
+        return 0.0
+
     s = W**2
     
     alpha_P_0 = params[12]
@@ -410,6 +430,9 @@ def dsig_dt_B_plus(W,t,params,mB):
     
 def dsig_dt_B_minus(W,t,params,mB):
     
+    if W < mB + mp:
+        return 0.0
+
     s = W**2
     
     g_pi_NN = params[0]
@@ -470,7 +493,7 @@ def dsig_dcosth_B_minus(W,costh,params,mB):
 
 def dsigT_dt_omega_plus(W,t,Q2,params):
     
-    if W < mB + mp:
+    if W < m_omega + mp:
         return 0.0
 
     s = W**2
@@ -496,7 +519,7 @@ def dsigT_dt_omega_plus(W,t,Q2,params):
 
 def dsigT_dt_rho_plus(W,t,Q2,params):
     
-    if W < mB + mp:
+    if W < m_rho + mp:
         return 0.0
 
     s = W**2
@@ -522,7 +545,7 @@ def dsigT_dt_rho_plus(W,t,Q2,params):
 
 def dsigT_dt_phi_plus(W,t,Q2,params):
     
-    if W < mB + mp:
+    if W < m_phi + mp:
         return 0.0
 
     s = W**2
@@ -536,7 +559,7 @@ def dsigT_dt_phi_plus(W,t,Q2,params):
     b_P_phi_phi = params[9]
     B_phi = params[11]
  
-    F_p_rho = np.exp(0.5*B_phi*t)
+    F_p_phi = np.exp(0.5*B_phi*t)
     
     prefactor = 2 * alpha_EM * f_phi**2 / 8 / m_phi**2 * beta_PNN**2 * (s/s0)**exponent * (1 + 0.5 * Q2/s)**2 * F_p_phi**2
     
@@ -548,7 +571,7 @@ def dsigT_dt_phi_plus(W,t,Q2,params):
 
 def dsigL_dt_omega_plus(W,t,Q2,params):
     
-    if W < mB + mp:
+    if W < m_omega + mp:
         return 0.0
 
     s = W**2
@@ -570,7 +593,7 @@ def dsigL_dt_omega_plus(W,t,Q2,params):
 
 def dsigL_dt_rho_plus(W,t,Q2,params):
     
-    if W < mB + mp:
+    if W < m_rho + mp:
         return 0.0
 
     s = W**2
@@ -593,7 +616,7 @@ def dsigL_dt_rho_plus(W,t,Q2,params):
 
 def dsigL_dt_phi_plus(W,t,Q2,params):
     
-    if W < mB + mp:
+    if W < m_phi + mp:
         return 0.0
 
     s = W**2
@@ -607,7 +630,7 @@ def dsigL_dt_phi_plus(W,t,Q2,params):
     b_P_phi_phi = params[9]
     B_phi = params[11]
  
-    F_p_rho = np.exp(0.5*B_phi*t)
+    F_p_phi = np.exp(0.5*B_phi*t)
     
     prefactor = 2 * alpha_EM * f_phi**2 / 2 / m_phi**2 * beta_PNN**2 * (s/s0)**exponent * (1 + 0.5 * Q2/s)**2 * F_p_phi**2 
     terms = np.abs(a_P_phi_phi)**2 * (m_phi**2 - t) * Q2
@@ -697,7 +720,7 @@ def dsigL_dt_B_plus(W,t,Q2,params,mB):
 
 def dsigT_dt_omega_minus(W,t,Q2,params):
 
-    if W < mB + mp:
+    if W < m_omega + mp:
         return 0.0
 
     s = W**2
@@ -724,7 +747,7 @@ def dsigT_dt_omega_minus(W,t,Q2,params):
 
 def dsigT_dt_rho_minus(W,t,Q2,params):
 
-    if W < mB + mp:
+    if W < m_rho + mp:
         return 0.0
 
     s = W**2
@@ -751,7 +774,7 @@ def dsigT_dt_rho_minus(W,t,Q2,params):
 
 def dsigT_dt_phi_minus(W,t,Q2,params):
 
-    if W < mB + mp:
+    if W < m_phi + mp:
         return 0.0
 
     s = W**2
@@ -817,7 +840,7 @@ def dsigT_dt_B_minus(W,t,Q2,params,mB):
     
 def dsigL_dt_omega_minus(W,t,Q2,params):
 
-    if W < mB + mp:
+    if W < m_omega + mp:
         return 0.0
 
     s = W**2
@@ -844,7 +867,7 @@ def dsigL_dt_omega_minus(W,t,Q2,params):
 
 def dsigL_dt_rho_minus(W,t,Q2,params):
 
-    if W < mB + mp:
+    if W < m_rho + mp:
         return 0.0
 
     s = W**2
@@ -871,7 +894,7 @@ def dsigL_dt_rho_minus(W,t,Q2,params):
 
 def dsigL_dt_phi_minus(W,t,Q2,params):
 
-    if W < mB + mp:
+    if W < m_phi + mp:
         return 0.0
 
     s = W**2
@@ -935,6 +958,18 @@ def dsigL_dt_B_minus(W,t,Q2,params,mB):
     
     return dsig_dt * units
 
+def dsigT_dt_omega(W,t,Q2,params):
+    return dsigT_dt_omega_plus(W,t,Q2,params) + dsigT_dt_omega_minus(W,t,Q2,params)
+
+def dsigT_dt_rho(W,t,Q2,params):
+    return dsigT_dt_rho_plus(W,t,Q2,params) + dsigT_dt_rho_minus(W,t,Q2,params)
+
+def dsigT_dt_phi(W,t,Q2,params):
+    return dsigT_dt_phi_plus(W,t,Q2,params) + dsigT_dt_phi_minus(W,t,Q2,params)
+
+def dsigL_dt_B(W,t,Q2,params,mB):
+    return dsigL_dt_B_plus(W,t,Q2,params,mB) + dsigL_dt_B_minus(W,t,Q2,params,mB)
+
 def dsigT_dt_B(W,t,Q2,params,mB):
     return dsigT_dt_B_plus(W,t,Q2,params,mB) + dsigT_dt_B_minus(W,t,Q2,params,mB)
 
@@ -993,6 +1028,24 @@ def sigT_B(W,Q2,mB,params):
 def sigL_B(W,Q2,mB,params):
     return sig_electro(dsigL_dt_B,W,Q2,params,mB)
 
+def sigT_omega(W,Q2,params):
+    return sig_electro(dsigT_dt_omega,W,Q2,params,m_omega)
+
+def sigL_omega(W,Q2,params):
+    return sig_electro(dsigL_dt_omega,W,Q2,params,m_omega)
+
+def sigT_rho(W,Q2,params):
+    return sig_electro(dsigT_dt_rho,W,Q2,params,m_rho)
+
+def sigL_rho(W,Q2,params):
+    return sig_electro(dsigL_dt_rho,W,Q2,params,m_rho)
+
+def sigT_phi(W,Q2,params):
+    return sig_electro(dsigT_dt_phi,W,Q2,params,m_phi)
+
+def sigL_phi(W,Q2,params):
+    return sig_electro(dsigL_dt_phi,W,Q2,params,m_phi)
+
 def Gamma_T(Q2,y):
     prefactor = alpha_EM / (2*np.pi * Q2 * y)
     return prefactor * (1 + (1-y)**2 - 2 * me**2 * y**2 /Q2)
@@ -1006,3 +1059,26 @@ def sigT_B_quantile(W,Q2,mB,chain,q):
 
 def sigL_B_quantile(W,Q2,mB,chain,q):
     return quantile(sigL_B,chain,q,W,Q2,mB)
+
+def epsilon(Q2,y):
+    return Gamma_L(Q2,y) / Gamma_T(Q2,y)
+
+def sigma_virtual_omega(s_tot,W,Q2,params):
+
+    y = (W**2 - mp**2 + Q2) / (s_tot - mp**2)
+
+    return sigmaT_omega(W,Q2,params) + epsilon(Q2,y) * sigmaL_omega(W,Q2,params)
+
+def sigma_virtual_rho(s_tot,W,Q2,params):
+
+    y = (W**2 - mp**2 + Q2) / (s_tot - mp**2)
+
+    return sigmaT_rho(W,Q2,params) + epsilon(Q2,y) * sigmaL_rho(W,Q2,params)
+
+def sigma_virtual_phi(s_tot,W,Q2,params):
+
+    y = (W**2 - mp**2 + Q2) / (s_tot - mp**2)
+
+    return sigmaT_phi(W,Q2,params) + epsilon(Q2,y) * sigmaL_phi(W,Q2,params)
+
+    
