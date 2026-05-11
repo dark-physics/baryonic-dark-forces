@@ -60,13 +60,19 @@ units = 389.3793656 # Conversion from 1/GeV^2 to mu_barn
 #  params[12] = alpha_Pom_prime (Pomeron trajectory slope)
 #  params[13] = a_Pom_omega_omega
 #  params[14] = a_Pom_phi_phi 
-
-
+#  params[15] = Lambda_pi_gam_rho
+#  params[16] = Lambda_eta_gam_rho
+#  params[17] = b_Pom_rho_rho
+#  params[18] = a_Pom_rho_rho
+#  params[19] = B_rho (form factor slope)
+ 
 # Differential cross sections
 # Note: plus = pomeron exchange
 #       minus = pseudoscalar exchange
 # rho cross sections are incomplete and do not describe data at low s 
 # (need sigma-meson exchange or other terms)
+
+# Photoproduction
 
 def dsig_dt_omega_plus(W,t,params):
     
@@ -96,9 +102,10 @@ def dsig_dt_rho_plus(W,t,params):
     
     s = W**2
     
-    a_P_rho_rho = params[13] 
-    b_P_rho_rho = params[8]
-    B_rho = params[10]
+    # Changed to include rho meson
+    a_P_rho_rho = params[18] 
+    b_P_rho_rho = params[17]
+    B_rho = params[19]
     
     prefactor = alpha_EM * f_rho**2 / m_rho**2 / 8 * 9
     form_factor = np.exp(0.5*B_rho*t)
@@ -196,14 +203,16 @@ def dsig_dt_rho_minus(W,t,params):
     g_eta_NN = params[1]
     L_pi_NN = params[2]
     L_eta_NN = params[3]
-    L_pi_gam_omega = params[4] # Assume same for rho
-    L_eta_gam_omega = params[5] # Assume same for rho
+
+    # Changed to include rho
+    L_pi_gam_rho = params[15]
+    L_eta_gam_rho = params[16]
     
     def F(Lambda,m): 
         return (Lambda**2 - m**2) / (Lambda**2 - t)
     
-    A_rho_pi = g_pi_NN * g_pi_gam_rho * F(L_pi_NN,m_pi) * F(L_pi_gam_omega,m_pi) / (t - m_pi**2)
-    A_rho_eta = g_eta_NN * g_eta_gam_rho * F(L_eta_NN,m_eta) * F(L_eta_gam_omega,m_eta) / (t - m_eta**2)
+    A_rho_pi = g_pi_NN * g_pi_gam_rho * F(L_pi_NN,m_pi) * F(L_pi_gam_rho,m_pi) / (t - m_pi**2)
+    A_rho_eta = g_eta_NN * g_eta_gam_rho * F(L_eta_NN,m_eta) * F(L_eta_gam_rho,m_eta) / (t - m_eta**2)
     A_tot = A_rho_pi + A_rho_eta
     
     prefactor = - alpha_EM * t * (t - m_rho**2)**2 / (16 * m_rho**2 * (s - mp**2)**2 )
@@ -443,7 +452,7 @@ def sig_B_plus(W,mB,params):
     return sig(dsig_dt_B_plus,W,params,mB)
 
 def sig_B_minus(W,mB,params):
-    return sigt(dsig_dt_B_minus,W,params,mB)
+    return sig(dsig_dt_B_minus,W,params,mB)
 
 def sig_B_quantile(W,mB,chain,q):
     return quantile(sig_B,chain,q,W,mB)
@@ -456,6 +465,154 @@ def dsig_dcosth_B_plus(W,costh,params,mB):
 
 def dsig_dcosth_B_minus(W,costh,params,mB):
     return dsig_dcosth(W,costh,params,mB,dsig_dt_B_minus)
+
+# Electroproduction
+
+def dsigT_dt_omega_plus(W,t,Q2,params):
+    
+    if W < mB + mp:
+        return 0.0
+
+    s = W**2
+    
+    alpha_P_0 = params[12]
+    s0 = 1/alpha_prime_P_0
+    alpha_P = alpha_P_0 + t/s0
+    exponent = 2*alpha_P - 2 
+    
+    a_P_omega_omega = params[13]
+    b_P_omega_omega = params[8]
+    B_omega = params[10]
+    
+    F_p_omega = np.exp(0.5*B_omega*t)
+    
+    prefactor = alpha_EM * f_omega**2 / 8 / m_omega**2 * beta_PNN**2 * (s/s0)**exponent * (1 + 0.5 * Q2/s)**2 * F_p_omega**2
+    
+    terms = np.abs(a_P_omega_omega)**2 * ((m_omega**2 - t)**2 - 2 * Q2 * m_omega**2 + Q2**2)
+    terms += np.abs(b_P_omega_omega)**2 
+    terms += 2 * (m_omega**2 - Q2) * np.real(a_P_omega_omega*np.conjugate(b_P_omega_omega))
+    
+    return prefactor * terms * units
+
+def dsigT_dt_rho_plus(W,t,Q2,params):
+    
+    if W < mB + mp:
+        return 0.0
+
+    s = W**2
+    
+    alpha_P_0 = params[12]
+    s0 = 1/alpha_prime_P_0
+    alpha_P = alpha_P_0 + t/s0
+    exponent = 2*alpha_P - 2 
+    
+    a_P_rho_rho = params[18] 
+    b_P_rho_rho = params[17]
+    B_rho = params[19]
+    
+    F_p_rho = np.exp(0.5*B_rho*t)
+    
+    prefactor = 9 * alpha_EM * f_rho**2 / 8 / m_rho**2 * beta_PNN**2 * (s/s0)**exponent * (1 + 0.5 * Q2/s)**2 * F_p_rho**2
+    
+    terms = np.abs(a_P_rho_rho)**2 * ((m_rho**2 - t)**2 - 2 * Q2 * m_rho**2 + Q2**2)
+    terms += np.abs(b_P_rho_rho)**2 
+    terms += 2 * (m_rho**2 - Q2) * np.real(a_P_rho_rho*np.conjugate(b_P_rho_rho))
+    
+    return prefactor * terms * units
+
+def dsigT_dt_phi_plus(W,t,Q2,params):
+    
+    if W < mB + mp:
+        return 0.0
+
+    s = W**2
+    
+    alpha_P_0 = params[12]
+    s0 = 1/alpha_prime_P_0
+    alpha_P = alpha_P_0 + t/s0
+    exponent = 2*alpha_P - 2 
+    
+    a_P_phi_phi = params[14]
+    b_P_phi_phi = params[9]
+    B_phi = params[11]
+ 
+    F_p_rho = np.exp(0.5*B_phi*t)
+    
+    prefactor = 2 * alpha_EM * f_phi**2 / 8 / m_phi**2 * beta_PNN**2 * (s/s0)**exponent * (1 + 0.5 * Q2/s)**2 * F_p_phi**2
+    
+    terms = np.abs(a_P_phi_phi)**2 * ((m_phi**2 - t)**2 - 2 * Q2 * m_phi**2 + Q2**2)
+    terms += np.abs(b_P_phi_phi)**2 
+    terms += 2 * (m_phi**2 - Q2) * np.real(a_P_phi_phi*np.conjugate(b_P_phi_phi))
+    
+    return prefactor * terms * units
+
+def dsigL_dt_omega_plus(W,t,Q2,params):
+    
+    if W < mB + mp:
+        return 0.0
+
+    s = W**2
+    
+    alpha_P_0 = params[12]
+    s0 = 1/alpha_prime_P_0
+    alpha_P = alpha_P_0 + t/s0
+    exponent = 2*alpha_P - 2 
+    
+    a_P_omega_omega = params[13]
+    B_omega = params[10]
+    
+    F_p_omega = np.exp(0.5*B_omega*t)
+    
+    prefactor = alpha_EM * f_omega**2 / 2 / m_omega**2 * beta_PNN**2 * (s/s0)**exponent * (1 + 0.5 * Q2/s)**2 * F_p_omega**2 
+    terms = np.abs(a_P_omega_omega)**2 * (m_omega**2 - t) * Q2
+    
+    return prefactor * terms * units
+
+def dsigL_dt_rho_plus(W,t,Q2,params):
+    
+    if W < mB + mp:
+        return 0.0
+
+    s = W**2
+    
+    alpha_P_0 = params[12]
+    s0 = 1/alpha_prime_P_0
+    alpha_P = alpha_P_0 + t/s0
+    exponent = 2*alpha_P - 2 
+    
+    a_P_rho_rho = params[18] 
+    b_P_rho_rho = params[17]
+    B_rho = params[19]
+    
+    F_p_rho = np.exp(0.5*B_rho*t)
+    
+    prefactor = 9 * alpha_EM * f_rho**2 / 2 / m_rho**2 * beta_PNN**2 * (s/s0)**exponent * (1 + 0.5 * Q2/s)**2 * F_p_rho**2 
+    terms = np.abs(a_P_rho_rho)**2 * (m_rho**2 - t) * Q2
+    
+    return prefactor * terms * units
+
+def dsigL_dt_phi_plus(W,t,Q2,params):
+    
+    if W < mB + mp:
+        return 0.0
+
+    s = W**2
+    
+    alpha_P_0 = params[12]
+    s0 = 1/alpha_prime_P_0
+    alpha_P = alpha_P_0 + t/s0
+    exponent = 2*alpha_P - 2 
+    
+    a_P_phi_phi = params[14]
+    b_P_phi_phi = params[9]
+    B_phi = params[11]
+ 
+    F_p_rho = np.exp(0.5*B_phi*t)
+    
+    prefactor = 2 * alpha_EM * f_phi**2 / 2 / m_phi**2 * beta_PNN**2 * (s/s0)**exponent * (1 + 0.5 * Q2/s)**2 * F_p_phi**2 
+    terms = np.abs(a_P_phi_phi)**2 * (m_phi**2 - t) * Q2
+    
+    return prefactor * terms * units
 
 def dsigT_dt_B_plus(W,t,Q2,params,mB):
     
@@ -499,7 +656,7 @@ def dsigT_dt_B_plus(W,t,Q2,params,mB):
     terms += 2 * (mB**2 - Q2) * np.real(a_P_gamma_B*np.conjugate(b_P_gamma_B))
     
     return prefactor * terms * units
-
+   
 def dsigL_dt_B_plus(W,t,Q2,params,mB):
     
     if W < mB + mp:
@@ -537,6 +694,87 @@ def dsigL_dt_B_plus(W,t,Q2,params,mB):
     terms = np.abs(a_P_gamma_B)**2 * (mB**2 - t) * Q2 
     
     return prefactor * terms * units
+
+def dsigT_dt_omega_minus(W,t,Q2,params):
+
+    if W < mB + mp:
+        return 0.0
+
+    s = W**2
+    
+    g_pi_NN = params[0]
+    g_eta_NN = params[1]
+    L_pi_NN = params[2]
+    L_eta_NN = params[3]
+    L_pi_gam_omega = params[4]
+    L_eta_gam_omega = params[5]
+    
+    def F(Lambda,m): 
+        return (Lambda**2 - m**2) / (Lambda**2 - t)
+    
+    A_omega_pi = g_pi_NN * g_pi_gam_omega * F(L_pi_NN,m_pi) * F(L_pi_gam_omega,m_pi) / (t - m_pi**2) 
+    A_omega_eta = g_eta_NN * g_eta_gam_omega * F(L_eta_NN,m_eta) * F(L_eta_gam_omega,m_eta) / (t - m_eta**2)
+    A_omega_tot = (A_omega_pi + A_omega_eta) / m_omega
+    
+    prefactor = alpha_EM * np.abs(t) * ((t - m_omega**2)**2 + Q2**2 + 2 * Q2 * m_omega**2) / (16 * s * (s + Q2))
+    
+    dsig_dt = prefactor * np.abs(A_omega_tot)**2
+    
+    return dsig_dt * units
+
+def dsigT_dt_rho_minus(W,t,Q2,params):
+
+    if W < mB + mp:
+        return 0.0
+
+    s = W**2
+    
+    g_pi_NN = params[0]
+    g_eta_NN = params[1]
+    L_pi_NN = params[2]
+    L_eta_NN = params[3]
+    L_pi_gam_rho = params[15]
+    L_eta_gam_rho = params[16]
+    
+    def F(Lambda,m): 
+        return (Lambda**2 - m**2) / (Lambda**2 - t)
+    
+    A_rho_pi = g_pi_NN * g_pi_gam_rho * F(L_pi_NN,m_pi) * F(L_pi_gam_rho,m_pi) / (t - m_pi**2) 
+    A_rho_eta = g_eta_NN * g_eta_gam_rho * F(L_eta_NN,m_eta) * F(L_eta_gam_rho,m_eta) / (t - m_eta**2)
+    A_rho_tot = (A_rho_pi + A_rho_eta) / m_omega
+    
+    prefactor = alpha_EM * np.abs(t) * ((t - m_rho**2)**2 + Q2**2 + 2 * Q2 * m_rho**2) / (16 * s * (s + Q2))
+    
+    dsig_dt = prefactor * np.abs(A_rho_tot)**2
+    
+    return dsig_dt * units
+
+def dsigT_dt_phi_minus(W,t,Q2,params):
+
+    if W < mB + mp:
+        return 0.0
+
+    s = W**2
+    
+    g_pi_NN = params[0]
+    g_eta_NN = params[1]
+    L_pi_NN = params[2]
+    L_eta_NN = params[3]
+    L_pi_gam_phi = params[6]
+    L_eta_gam_phi = params[7]
+    
+    def F(Lambda,m): 
+        return (Lambda**2 - m**2) / (Lambda**2 - t)
+    
+    A_phi_pi = g_pi_NN * g_pi_gam_phi * F(L_pi_NN,m_pi) * F(L_pi_gam_phi,m_pi) / (t - m_pi**2) 
+    A_phi_eta = g_eta_NN * g_eta_gam_phi * F(L_eta_NN,m_eta) * F(L_eta_gam_phi,m_eta) / (t - m_eta**2)
+    A_phi_tot = (A_phi_pi + A_phi_eta) / m_omega
+    
+    prefactor = alpha_EM * np.abs(t) * ((t - m_phi**2)**2 + Q2**2 + 2 * Q2 * m_phi**2) / (16 * s * (s + Q2))
+    
+    dsig_dt = prefactor * np.abs(A_phi_tot)**2
+    
+    return dsig_dt * units
     
 def dsigT_dt_B_minus(W,t,Q2,params,mB):
 
@@ -576,7 +814,88 @@ def dsigT_dt_B_minus(W,t,Q2,params,mB):
     dsig_dt = prefactor * np.abs(A_phi_tot + A_omega_tot)**2
     
     return dsig_dt * units
+    
+def dsigL_dt_omega_minus(W,t,Q2,params):
 
+    if W < mB + mp:
+        return 0.0
+
+    s = W**2
+    
+    g_pi_NN = params[0]
+    g_eta_NN = params[1]
+    L_pi_NN = params[2]
+    L_eta_NN = params[3]
+    L_pi_gam_omega = params[4]
+    L_eta_gam_omega = params[5]
+    
+    def F(Lambda,m): 
+        return (Lambda**2 - m**2) / (Lambda**2 - t)
+    
+    A_omega_pi = g_pi_NN * g_pi_gam_omega * F(L_pi_NN,m_pi) * F(L_pi_gam_omega,m_pi) / (t - m_pi**2) 
+    A_omega_eta = g_eta_NN * g_eta_gam_omega * F(L_eta_NN,m_eta) * F(L_eta_gam_omega,m_eta) / (t - m_eta**2)
+    A_omega_tot = (A_omega_pi + A_omega_eta) / m_omega
+    
+    prefactor = alpha_EM * np.abs(t)**2 * Q2 / (4 * s * (s + Q2))
+    
+    dsig_dt = prefactor * np.abs(A_omega_tot)**2
+    
+    return dsig_dt * units
+
+def dsigL_dt_rho_minus(W,t,Q2,params):
+
+    if W < mB + mp:
+        return 0.0
+
+    s = W**2
+    
+    g_pi_NN = params[0]
+    g_eta_NN = params[1]
+    L_pi_NN = params[2]
+    L_eta_NN = params[3]
+    L_pi_gam_rho = params[15]
+    L_eta_gam_rho = params[16]
+    
+    def F(Lambda,m): 
+        return (Lambda**2 - m**2) / (Lambda**2 - t)
+    
+    A_rho_pi = g_pi_NN * g_pi_gam_rho * F(L_pi_NN,m_pi) * F(L_pi_gam_rho,m_pi) / (t - m_pi**2) 
+    A_rho_eta = g_eta_NN * g_eta_gam_rho * F(L_eta_NN,m_eta) * F(L_eta_gam_rho,m_eta) / (t - m_eta**2)
+    A_rho_tot = (A_rho_pi + A_rho_eta) / m_omega
+    
+    prefactor = alpha_EM * np.abs(t)**2 * Q2 / (4 * s * (s + Q2))
+    
+    dsig_dt = prefactor * np.abs(A_rho_tot)**2
+    
+    return dsig_dt * units
+
+def dsigL_dt_phi_minus(W,t,Q2,params):
+
+    if W < mB + mp:
+        return 0.0
+
+    s = W**2
+    
+    g_pi_NN = params[0]
+    g_eta_NN = params[1]
+    L_pi_NN = params[2]
+    L_eta_NN = params[3]
+    L_pi_gam_phi = params[6]
+    L_eta_gam_phi = params[7]
+    
+    def F(Lambda,m): 
+        return (Lambda**2 - m**2) / (Lambda**2 - t)
+    
+    A_phi_pi = g_pi_NN * g_pi_gam_phi * F(L_pi_NN,m_pi) * F(L_pi_gam_phi,m_pi) / (t - m_pi**2) 
+    A_phi_eta = g_eta_NN * g_eta_gam_phi * F(L_eta_NN,m_eta) * F(L_eta_gam_phi,m_eta) / (t - m_eta**2)
+    A_phi_tot = (A_phi_pi + A_phi_eta) / m_omega
+    
+    prefactor = alpha_EM * np.abs(t)**2 * Q2 / (4 * s * (s + Q2))
+    
+    dsig_dt = prefactor * np.abs(A_phi_tot)**2
+    
+    return dsig_dt * units
+    
 def dsigL_dt_B_minus(W,t,Q2,params,mB):
     
     if W < mB + mp:
@@ -615,7 +934,7 @@ def dsigL_dt_B_minus(W,t,Q2,params,mB):
     dsig_dt = prefactor * np.abs(A_phi_tot + A_omega_tot)**2
     
     return dsig_dt * units
-    
+
 def dsigT_dt_B(W,t,Q2,params,mB):
     return dsigT_dt_B_plus(W,t,Q2,params,mB) + dsigT_dt_B_minus(W,t,Q2,params,mB)
 
