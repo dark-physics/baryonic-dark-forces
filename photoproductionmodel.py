@@ -238,12 +238,15 @@ def dsig_dt_rho_minus(W,t,params):
     
     return dsig_dt * units
 
+@np.vectorize(excluded=[2])
 def dsig_dt_rho(W,t,params):
     return dsig_dt_rho_plus(W,t,params) + dsig_dt_rho_minus(W,t,params)
 
+@np.vectorize(excluded=[2])
 def dsig_dt_omega(W,t,params):
     return dsig_dt_omega_plus(W,t,params) + dsig_dt_omega_minus(W,t,params)
 
+@np.vectorize(excluded=[2])
 def dsig_dt_phi(W,t,params):
     return dsig_dt_phi_plus(W,t,params) + dsig_dt_phi_minus(W,t,params)
 
@@ -1102,6 +1105,26 @@ def sig_virtual_phi(s_tot,W,Q2,params):
     y = (W**2 - mp**2 + Q2) / (s_tot - mp**2)
 
     return sigT_phi(W,Q2,params) + epsilon(Q2,y) * sigL_phi(W,Q2,params)
+
+# Total photon-proton inclusive cross section
+def sig_gamma_proton_tot(s,params):
+
+    alpha_P = params[12] 
+    eps_P = alpha_P - 1
+    s0 = 1/alpha_prime_P_0
+    
+    prefactor = 6 * np.pi * alpha_EM * beta_PNN * np.cos(np.pi * eps_P / 2) * (s / s0)**eps_P
+
+    b_Pom_rho_rho = params[17]
+    b_Pom_omega_omega = params[8]
+    b_Pom_phi_phi = params[9]
+    
+    term1 = f_rho**2 / m_rho**2 * b_Pom_rho_rho
+    term2 = f_omega**2 / m_omega**2 * b_Pom_omega_omega / 9
+    term3 = 2 * f_phi**2 / m_phi**2 * b_Pom_phi_phi / 9
+
+    return prefactor * (term1 + term2 + term3)
+    
 
 # Organize cross sections in a class
 
