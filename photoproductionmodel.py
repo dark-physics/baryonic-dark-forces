@@ -5,10 +5,16 @@ import pandas as pd
 
 # Function used for integration
 
+# def integrate(func,a,b):
+#     f = lambda t,y: func(t)
+#     sol = solve_ivp(f,[a,b],[0],atol=1e-12,rtol=1e-12)
+#     output = sol.y[0,-1]
+#     return output
+
 def integrate(func,a,b):
-    f = lambda t,y: func(t)
-    sol = solve_ivp(f,[a,b],[0],atol=1e-12,rtol=1e-12)
-    output = sol.y[0,-1]
+    f = lambda t: func(t)
+    sol = quad(f, a, b)
+    output = sol[0]
     return output
 
 # File used for converting reading csv into dictionary of np.arrays
@@ -21,6 +27,11 @@ def read_csv(file):
     output = {}
     for key in df.columns:
         output[key] = np.array(df[key])
+
+    try:
+        output['t'] = - np.abs(output['t'])
+    except:
+        pass
 
     return output
 
@@ -524,6 +535,7 @@ def dsig_dcosth_B_minus(W,costh,params,mB):
 
 # Electroproduction
 
+@njit
 def dsigT_dt_omega_plus(W,t,Q2,params):
     
     if W < m_omega + mp:
@@ -550,6 +562,7 @@ def dsigT_dt_omega_plus(W,t,Q2,params):
     
     return prefactor * terms * units
 
+@njit
 def dsigT_dt_rho_plus(W,t,Q2,params):
     
     if W < m_rho + mp:
@@ -576,6 +589,7 @@ def dsigT_dt_rho_plus(W,t,Q2,params):
     
     return prefactor * terms * units
 
+@njit
 def dsigT_dt_phi_plus(W,t,Q2,params):
     
     if W < m_phi + mp:
@@ -602,6 +616,7 @@ def dsigT_dt_phi_plus(W,t,Q2,params):
     
     return prefactor * terms * units
 
+@njit
 def dsigL_dt_omega_plus(W,t,Q2,params):
     
     if W < m_omega + mp:
@@ -624,6 +639,7 @@ def dsigL_dt_omega_plus(W,t,Q2,params):
     
     return prefactor * terms * units
 
+@njit
 def dsigL_dt_rho_plus(W,t,Q2,params):
     
     if W < m_rho + mp:
@@ -647,6 +663,7 @@ def dsigL_dt_rho_plus(W,t,Q2,params):
     
     return prefactor * terms * units
 
+@njit
 def dsigL_dt_phi_plus(W,t,Q2,params):
     
     if W < m_phi + mp:
@@ -670,6 +687,7 @@ def dsigL_dt_phi_plus(W,t,Q2,params):
     
     return prefactor * terms * units
 
+@njit
 def dsigT_dt_B_plus(W,t,Q2,params,mB):
     
     if W < mB + mp:
@@ -712,7 +730,8 @@ def dsigT_dt_B_plus(W,t,Q2,params,mB):
     terms += 2 * (mB**2 - Q2) * np.real(a_P_gamma_B*np.conjugate(b_P_gamma_B))
     
     return prefactor * terms * units
-   
+
+@njit    
 def dsigL_dt_B_plus(W,t,Q2,params,mB):
     
     if W < mB + mp:
@@ -751,6 +770,7 @@ def dsigL_dt_B_plus(W,t,Q2,params,mB):
     
     return prefactor * terms * units
 
+@njit
 def dsigT_dt_omega_minus(W,t,Q2,params):
 
     if W < m_omega + mp:
@@ -778,6 +798,7 @@ def dsigT_dt_omega_minus(W,t,Q2,params):
     
     return dsig_dt * units
 
+@njit    
 def dsigT_dt_rho_minus(W,t,Q2,params):
 
     if W < m_rho + mp:
@@ -805,6 +826,7 @@ def dsigT_dt_rho_minus(W,t,Q2,params):
     
     return dsig_dt * units
 
+@njit
 def dsigT_dt_phi_minus(W,t,Q2,params):
 
     if W < m_phi + mp:
@@ -831,7 +853,8 @@ def dsigT_dt_phi_minus(W,t,Q2,params):
     dsig_dt = prefactor * np.abs(A_phi_tot)**2
     
     return dsig_dt * units
-    
+
+@njit
 def dsigT_dt_B_minus(W,t,Q2,params,mB):
 
     if W < mB + mp:
@@ -870,7 +893,8 @@ def dsigT_dt_B_minus(W,t,Q2,params,mB):
     dsig_dt = prefactor * np.abs(A_phi_tot + A_omega_tot)**2
     
     return dsig_dt * units
-    
+
+@njit
 def dsigL_dt_omega_minus(W,t,Q2,params):
 
     if W < m_omega + mp:
@@ -898,6 +922,7 @@ def dsigL_dt_omega_minus(W,t,Q2,params):
     
     return dsig_dt * units
 
+@njit
 def dsigL_dt_rho_minus(W,t,Q2,params):
 
     if W < m_rho + mp:
@@ -925,6 +950,7 @@ def dsigL_dt_rho_minus(W,t,Q2,params):
     
     return dsig_dt * units
 
+@njit
 def dsigL_dt_phi_minus(W,t,Q2,params):
 
     if W < m_phi + mp:
@@ -951,7 +977,8 @@ def dsigL_dt_phi_minus(W,t,Q2,params):
     dsig_dt = prefactor * np.abs(A_phi_tot)**2
     
     return dsig_dt * units
-    
+
+@njit    
 def dsigL_dt_B_minus(W,t,Q2,params,mB):
     
     if W < mB + mp:
