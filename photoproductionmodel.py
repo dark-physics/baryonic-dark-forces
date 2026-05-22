@@ -1,5 +1,7 @@
 import numpy as np
 from scipy.integrate import quad, solve_ivp
+from numba import njit
+import pandas as pd
 
 # Function used for integration
 
@@ -7,6 +9,19 @@ def integrate(func,a,b):
     f = lambda t,y: func(t)
     sol = solve_ivp(f,[a,b],[0],atol=1e-12,rtol=1e-12)
     output = sol.y[0,-1]
+    return output
+
+# File used for converting reading csv into dictionary of np.arrays
+def read_csv(file):
+
+    # Load csv file as pandas.DataFrame
+    df = pd.read_csv(file)
+
+    # Convert to dict
+    output = {}
+    for key in df.columns:
+        output[key] = np.array(df[key])
+
     return output
 
 # Fixed numerical inputs
@@ -73,6 +88,7 @@ units = 389.3793656 # Conversion from 1/GeV^2 to mu_barn
 
 # Photoproduction
 
+@njit
 def dsig_dt_omega_plus(W,t,params):
 
     if W < m_omega + mp:
@@ -100,6 +116,7 @@ def dsig_dt_omega_plus(W,t,params):
     
     return dsig_dt * units
 
+@njit
 def dsig_dt_rho_plus(W,t,params):
     
     if W < m_rho + mp:
@@ -128,6 +145,7 @@ def dsig_dt_rho_plus(W,t,params):
     
     return dsig_dt * units
 
+@njit
 def dsig_dt_phi_plus(W,t,params):
 
     if W < m_phi + mp:
@@ -155,6 +173,7 @@ def dsig_dt_phi_plus(W,t,params):
     
     return dsig_dt * units
 
+@njit
 def dsig_dt_omega_minus(W,t,params):
 
     if W < m_omega + mp:
@@ -182,6 +201,7 @@ def dsig_dt_omega_minus(W,t,params):
     
     return dsig_dt * units
 
+@njit
 def dsig_dt_phi_minus(W,t,params):
 
     if W < m_phi + mp:
@@ -209,6 +229,7 @@ def dsig_dt_phi_minus(W,t,params):
     
     return dsig_dt * units
 
+@njit
 def dsig_dt_rho_minus(W,t,params):
 
     if W < m_rho + mp:
