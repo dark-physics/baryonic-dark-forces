@@ -1154,6 +1154,25 @@ def sig_virtual_phi(s_tot,W,Q2,params):
 
     return sigT_phi(W,Q2,params) + epsilon(Q2,y) * sigL_phi(W,Q2,params)
 
+def dsig_dt_virtual_rho(s_tot,W,Q2,t,params):
+
+    y = (W**2 - mp**2 + Q2) / (s_tot - mp**2)
+
+    return dsigT_dt_rho(W,t,Q2,params) + epsilon(Q2,y) * dsigL_dt_rho(W,t,Q2,params)
+
+def dsig_dt_virtual_omega(s_tot,W,Q2,t,params):
+
+    y = (W**2 - mp**2 + Q2) / (s_tot - mp**2)
+
+    return dsigT_dt_omega(W,t,Q2,params) + epsilon(Q2,y) * dsigL_dt_omega(W,t,Q2,params)
+
+def dsig_dt_virtual_phi(s_tot,W,Q2,t,params):
+
+    y = (W**2 - mp**2 + Q2) / (s_tot - mp**2)
+
+    return dsigT_dt_phi(W,t,Q2,params) + epsilon(Q2,y) * dsigL_dt_phi(W,t,Q2,params)
+
+
 # Total photon-proton inclusive cross section
 def sig_gamma_proton_tot(s,params):
 
