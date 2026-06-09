@@ -1078,7 +1078,7 @@ def sig_electro(func,W,Q2,params,mV):
         Eq1 = 0.5*(W**2 - mp**2 - Q2)/W
         q1 = np.sqrt(Eq1**2 + Q2)
 
-        # Final B kinematics
+        # Final state V kinematics
         Eq2 = 0.5*(W**2 - mp**2 + mV**2)/W
         q2 = np.sqrt(Eq2**2 - mV**2)
 
