@@ -75,7 +75,7 @@ Gamma_rho = 0.1474 # GeV
 
 units = 389.3793656 # Conversion from 1/GeV^2 to mu_barn
 
-# Phenomenological model parameters:
+# Mandatory phenomenological model parameters:
 #  params[0] = g_pi_NN
 #  params[1] = g_eta_NN
 #  params[2] = Lambda_pi_NN
@@ -96,9 +96,42 @@ units = 389.3793656 # Conversion from 1/GeV^2 to mu_barn
 #  params[17] = b_Pom_rho_rho
 #  params[18] = a_Pom_rho_rho
 #  params[19] = B_rho (form factor slope)
+
+# Optional parameters for f2
 #  params[20] = a_f2_rho_rho
 #  params[21] = b_f2_rho_rho
 #  params[22] = alpha_R_plus (Reggeon trajectory intercept)
+
+@njit
+def f2_corr(params, s, t):
+
+    # Optional inclusion of f2 parameters
+    if len(params) > 20:
+        
+        a_f2_rho_rho = params[20]
+        b_f2_rho_rho = params[21]
+        alpha_R_plus_0 = params[22]
+    
+        # f2 Reggeon terms
+        alpha_R_plus = alpha_R_plus_0 + t * alpha_prime_R_plus
+
+        # Pomeron terms
+        a_P_rho_rho = params[18] 
+        b_P_rho_rho = params[17]
+        alpha_P_0 = params[12]
+        alpha_P = alpha_P_0 + alpha_prime_P * t
+    
+        # Corrections due to f2 terms
+        trajectory_ratio = (-1j * s * alpha_prime_R_plus)**(alpha_R_plus - 1) / (-1j * s * alpha_prime_P)**(alpha_P - 1)
+        a_f2_corr = g_f2Rpp * a_f2_rho_rho / (3 * M0 * beta_PNN * a_P_rho_rho) * trajectory_ratio
+        b_f2_corr = g_f2Rpp * b_f2_rho_rho / (3 * M0 * beta_PNN * b_P_rho_rho) * trajectory_ratio
+
+    # No f2 parameters
+    else:
+        a_f2_corr = 0.0 + 0.0j
+        b_f2_corr = 0.0 + 0.0j
+
+    return a_f2_corr, b_f2_corr
 
 # Differential cross sections
 # Note: plus = pomeron exchange
@@ -149,24 +182,14 @@ def dsig_dt_rho_plus(W,t,params):
     b_P_rho_rho = params[17]
     B_rho = params[19]
 
-    a_f2_rho_rho = params[20]
-    b_f2_rho_rho = params[21]
-    alpha_R_plus_0 = params[22]
-
     # Pomeron terms
     alpha_P_0 = params[12]
     s0 = 1/alpha_prime_P
     alpha_P = alpha_P_0 + t / s0
     exponent = 2*alpha_P - 2 
 
-    # f2 Reggeon terms
-    alpha_R_plus = alpha_R_plus_0 + t * alpha_prime_R_plus
-    
-    # Corrections due to f2 terms
-    trajectory_ratio = (-1j * s**2 * alpha_prime_R_plus)**(alpha_R_plus - 1) / (-1j * s**2 * alpha_prime_P)**(alpha_P - 1)
-    a_f2_corr = g_f2Rpp * a_f2_rho_rho / (3 * M0 * beta_PNN * a_P_rho_rho) * trajectory_ratio
-    b_f2_corr = g_f2Rpp * b_f2_rho_rho / (3 * M0 * beta_PNN * b_P_rho_rho) * trajectory_ratio
-    
+    # Optional corrections from f2 exchange
+    a_f2_corr, b_f2_corr = f2_corr(params, s, t)
     a_P_rho_rho_eff = a_P_rho_rho * (1 + a_f2_corr)
     b_P_rho_rho_eff = b_P_rho_rho * (1 + b_f2_corr)
     
@@ -607,12 +630,17 @@ def dsigT_dt_rho_plus(W,t,Q2,params):
     B_rho = params[19]
     
     F_p_rho = np.exp(0.5*B_rho*t)
-    
+
+    # Optional corrections from f2 exchange
+    a_f2_corr, b_f2_corr = f2_corr(params, s, t)
+    a_P_rho_rho_eff = a_P_rho_rho * (1 + a_f2_corr)
+    b_P_rho_rho_eff = b_P_rho_rho * (1 + b_f2_corr)
+
     prefactor = 9 * alpha_EM * f_rho**2 / 8 / m_rho**2 * beta_PNN**2 * (s/s0)**exponent * (1 + 0.5 * Q2/s)**2 * F_p_rho**2
     
-    terms = np.abs(a_P_rho_rho)**2 * ((m_rho**2 - t)**2 - 2 * Q2 * m_rho**2 + Q2**2)
-    terms += np.abs(b_P_rho_rho)**2 
-    terms += 2 * (m_rho**2 - Q2) * np.real(a_P_rho_rho*np.conjugate(b_P_rho_rho))
+    terms = np.abs(a_P_rho_rho_eff)**2 * ((m_rho**2 - t)**2 - 2 * Q2 * m_rho**2 + Q2**2)
+    terms += np.abs(b_P_rho_rho_eff)**2 
+    terms += 2 * (m_rho**2 - Q2) * np.real(a_P_rho_rho_eff * np.conjugate(b_P_rho_rho_eff))
     
     return prefactor * terms * units
 
@@ -639,7 +667,7 @@ def dsigT_dt_phi_plus(W,t,Q2,params):
     
     terms = np.abs(a_P_phi_phi)**2 * ((m_phi**2 - t)**2 - 2 * Q2 * m_phi**2 + Q2**2)
     terms += np.abs(b_P_phi_phi)**2 
-    terms += 2 * (m_phi**2 - Q2) * np.real(a_P_phi_phi*np.conjugate(b_P_phi_phi))
+    terms += 2 * (m_phi**2 - Q2) * np.real(a_P_phi_phi * np.conjugate(b_P_phi_phi))
     
     return prefactor * terms * units
 
@@ -682,11 +710,15 @@ def dsigL_dt_rho_plus(W,t,Q2,params):
     a_P_rho_rho = params[18] 
     b_P_rho_rho = params[17]
     B_rho = params[19]
-    
+
     F_p_rho = np.exp(0.5*B_rho*t)
     
+    # Optional corrections from f2 exchange
+    a_f2_corr, b_f2_corr = f2_corr(params, s, t)
+    a_P_rho_rho_eff = a_P_rho_rho * (1 + a_f2_corr)
+    
     prefactor = 9 * alpha_EM * f_rho**2 / 2 / m_rho**2 * beta_PNN**2 * (s/s0)**exponent * (1 + 0.5 * Q2/s)**2 * F_p_rho**2 
-    terms = np.abs(a_P_rho_rho)**2 * (m_rho**2 - t) * Q2
+    terms = np.abs(a_P_rho_rho_eff)**2 * (m_rho**2 - t) * Q2
     
     return prefactor * terms * units
 
@@ -754,7 +786,7 @@ def dsigT_dt_B_plus(W,t,Q2,params,mB):
     
     terms = np.abs(a_P_gamma_B)**2 * ((mB**2 - t)**2 - 2 * Q2 * mB**2 + Q2**2)
     terms += np.abs(b_P_gamma_B)**2 
-    terms += 2 * (mB**2 - Q2) * np.real(a_P_gamma_B*np.conjugate(b_P_gamma_B))
+    terms += 2 * (mB**2 - Q2) * np.real(a_P_gamma_B * np.conjugate(b_P_gamma_B))
     
     return prefactor * terms * units
    
