@@ -1075,21 +1075,27 @@ def dsigL_dt_B_minus(W,t,Q2,params,mB):
     
     return dsig_dt * units
 
+@np.vectorize(excluded=[3])
 def dsigT_dt_omega(W,t,Q2,params):
     return dsigT_dt_omega_plus(W,t,Q2,params) + dsigT_dt_omega_minus(W,t,Q2,params)
 
+@np.vectorize(excluded=[3])
 def dsigT_dt_rho(W,t,Q2,params):
     return dsigT_dt_rho_plus(W,t,Q2,params) + dsigT_dt_rho_minus(W,t,Q2,params)
 
+@np.vectorize(excluded=[3])
 def dsigT_dt_phi(W,t,Q2,params):
     return dsigT_dt_phi_plus(W,t,Q2,params) + dsigT_dt_phi_minus(W,t,Q2,params)
 
+@np.vectorize(excluded=[3])
 def dsigL_dt_omega(W,t,Q2,params):
     return dsigL_dt_omega_plus(W,t,Q2,params) + dsigL_dt_omega_minus(W,t,Q2,params)
 
+@np.vectorize(excluded=[3])
 def dsigL_dt_rho(W,t,Q2,params):
     return dsigL_dt_rho_plus(W,t,Q2,params) + dsigL_dt_rho_minus(W,t,Q2,params)
 
+@np.vectorize(excluded=[3])
 def dsigL_dt_phi(W,t,Q2,params):
     return dsigL_dt_phi_plus(W,t,Q2,params) + dsigL_dt_phi_minus(W,t,Q2,params)
 
