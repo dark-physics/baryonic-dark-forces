@@ -11,11 +11,54 @@ import pandas as pd
 #     output = sol.y[0,-1]
 #     return output
 
+# def integrate(func,a,b):
+#     f = lambda t: func(t)
+#     sol = quad(f, a, b)
+#     output = sol[0]
+#     return output
+
 def integrate(func,a,b):
+
+    # Integrand
     f = lambda t: func(t)
-    sol = quad(f, a, b)
-    output = sol[0]
-    return output
+
+    # Iterative approach
+    # Compute int_c^b dt f(t) where c -> a iteratively until convergence is reached
+    
+    # Initial guess
+    c = -10
+    
+    # If a > c, just do the integral
+    if a > c:
+        output = quad(f, a, b)[0]
+        return output
+
+    # Else do an iterative approach
+    converged = False
+    output = quad(f, c, b)[0]
+
+    max_steps = 100
+    for i in range(max_steps):
+
+        # New contribution
+        new_output = output + quad(f, c - 10, c)[0]
+        # print(i, c - 10, c, output, new_output)
+        
+        # Convergence test
+        # Relative tolerance
+        rtol = 1e-6
+        if np.abs(new_output/output - 1) < rtol:
+
+            return new_output
+
+        else:
+
+            output = new_output
+            c = c - 10
+
+    else:
+        raise Exception(f'integrate failed to converge after {max_steps} steps')
+
 
 # File used for converting reading csv into dictionary of np.arrays
 def read_csv(file):
@@ -1123,8 +1166,7 @@ def sig_electro(func,W,Q2,params,mV):
         # Compute t
         tmin = mV**2 - Q2 - 2*Eq1*Eq2 - 2*q1*q2
         tmax = mV**2 - Q2 - 2*Eq1*Eq2 + 2*q1*q2
-    
-        # Calculate integral over t
+
         try:
             f = lambda t: func(W,t,Q2,params,mV)
             return integrate(f,tmin,tmax)
