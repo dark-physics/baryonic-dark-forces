@@ -5,7 +5,7 @@ dsigdt (mu barn/GeV^2),dsigdt error (mu barn/GeV^2),W,t,source
 35.475,2.2,4.281,-0.125,ballam
 29.075,2,4.281,-0.175,ballam
 19.875,1.5,4.281,-0.225,ballam
-15.275,1.2,4.281,0.275,ballam
+15.275,1.2,4.281,-0.275,ballam
 7.3,0.7,4.281,-0.35,ballam
 3.6,0.5,4.281,-0.45,ballam
 1.525,0.2,4.281,-0.6,ballam
