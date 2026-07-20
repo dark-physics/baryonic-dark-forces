@@ -545,20 +545,21 @@ def dsig_dt_B_plus(W,t,params,mB):
     s0 = 1/alpha_prime_P
     alpha_P = alpha_P_0 + t/s0
     exponent = 2*alpha_P - 2 
-    
-    a_P_omega_omega = params[13]
-    b_P_omega_omega = params[8]
-    b_omega = params[10]
+
+    a_f2_corr, b_f2_corr = f2_corr(params, s, t)
+    a_P_omega_omega = params[13] + a_f2_corr
+    b_P_omega_omega = params[8] + b_f2_corr
+    B_omega = params[10]
     
     a_P_phi_phi = params[14]
     b_P_phi_phi = params[9]
-    b_phi = params[11]
+    B_phi = params[11]
     
     F_omega = 1/(1 - mB**2/m_omega**2 - 1j*Gamma_omega/m_omega)
     F_phi = 1/(1 - mB**2/m_phi**2 - 1j*Gamma_phi/m_phi)
     
-    F_p_omega = np.exp(0.5*b_omega*t)
-    F_p_phi = np.exp(0.5*b_phi*t)
+    F_p_omega = np.exp(0.5 * B_omega*t)
+    F_p_phi = np.exp(0.5 * B_phi*t)
     
     c_omega = f_omega**2 * F_omega * F_p_omega / m_omega**2
     c_phi = f_phi**2 * F_phi * F_p_phi / m_phi**2
@@ -570,6 +571,58 @@ def dsig_dt_B_plus(W,t,params,mB):
     
     terms = np.abs(a_P_gamma_B)**2 * (mB**2 - t)**2 + np.abs(b_P_gamma_B)**2 
     terms += 2 * np.real(a_P_gamma_B*np.conjugate(b_P_gamma_B)) * mB**2
+    
+    return prefactor * terms * units
+
+def dsig_dt_X_plus(W,t,params,mX,xq):
+
+    # Light quark charges
+    xu, xd, xs = xq
+    
+    if W < mX + mp:
+        return 0.0
+
+    s = W**2
+    
+    alpha_P_0 = params[12]
+    alpha_P = alpha_P_0 + alpha_prime_P * t
+    exponent = 2*alpha_P - 2 
+
+    a_f2_corr, b_f2_corr = f2_corr(params, s, t)
+
+    # Changed to include rho meson and f2
+    a_P_rho_rho = params[18] + a_f2_corr
+    b_P_rho_rho = params[17] + b_f2_corr
+    B_rho = params[19]
+    
+    a_P_omega_omega = params[13] + a_f2_corr
+    b_P_omega_omega = params[8] + b_f2_corr
+    B_omega = params[10]
+    
+    a_P_phi_phi = params[14]
+    b_P_phi_phi = params[9]
+    B_phi = params[11]
+    
+    F_rho = 1/(1 - mX**2/m_rho**2 - 1j*Gamma_rho/m_rho)
+    F_omega = 1/(1 - mX**2/m_omega**2 - 1j*Gamma_omega/m_omega)
+    F_phi = 1/(1 - mX**2/m_phi**2 - 1j*Gamma_phi/m_phi)
+    
+    F_p_rho = np.exp(0.5*B_rho*t)
+    F_p_omega = np.exp(0.5*B_omega*t)
+    F_p_phi = np.exp(0.5*B_phi*t)
+    
+    C_rho = f_rho**2 / m_rho**2 * F_rho * F_p_rho * 3 / 2 * (xu - xd)
+    C_omega = f_omega**2/m_omega**2 * F_omega * F_p_omega * (xu + xd) / 2
+    C_phi = - f_phi**2/m_phi**2 * F_phi * F_p_phi * xs
+    
+    a_P_gamma_X = C_rho * a_P_rho_rho + C_omega * a_P_omega_omega + C_phi * a_P_phi_phi
+    b_P_gamma_X = C_rho * a_P_rho_rho + C_omega * b_P_omega_omega + C_phi * b_P_phi_phi
+    
+    prefactor = np.pi * alpha_EM * beta_PNN**2 * (alpha_prime_P * s)**exponent
+    
+    terms = np.abs(a_P_gamma_X)**2 * (mX**2 - t)**2
+    terms += np.abs(b_P_gamma_X)**2 
+    terms += 2 * mX**2 * np.real(a_P_gamma_X * np.conjugate(b_P_gamma_X))
     
     return prefactor * terms * units
     
@@ -609,9 +662,65 @@ def dsig_dt_B_minus(W,t,params,mB):
     
     return dsig_dt * units
 
+def dsig_dt_X_minus(W,t,params,mX,xq):
+
+    # Light quark charges
+    xu, xd, xs = xq
+    if W < mX + mp:
+        return 0.0
+
+    s = W**2
+    
+    g_pi_NN = params[0]
+    g_eta_NN = params[1]
+    L_pi_NN = params[2]
+    L_eta_NN = params[3]
+    L_pi_gam_omega = params[4]
+    L_eta_gam_omega = params[5]
+    L_pi_gam_phi = params[6]
+    L_eta_gam_phi = params[7]
+    L_pi_gam_rho = params[15]
+    L_eta_gam_rho = params[16]
+
+    def F(Lambda,m): 
+        return (Lambda**2 - m**2) / (Lambda**2 - t)
+
+    # Breit-Wigner form factors
+    # Modify due to invariant mass-dependent widths
+    F_omega = 1/(1 - mX**2/m_omega**2 - 1j*Gamma_omega/m_omega)
+    F_phi = 1/(1 - mX**2/m_phi**2 - 1j*Gamma_phi/m_phi)
+    F_rho = 1/(1 - mX**2/m_rho**2 - 1j*Gamma_rho/m_rho)
+
+    # Coefficients
+    C_rho = - f_rho * F_rho / m_rho * (xu - xd) / np.sqrt(2) 
+    C_omega = - f_omega * F_omega / m_omega * (xu + xd) / np.sqrt(2) 
+    C_phi = - f_phi * F_phi / m_phi * xs
+    
+    A_rho_pi = g_pi_NN * g_pi_gam_rho * F(L_pi_NN,m_pi) * F(L_pi_gam_rho,m_pi) / (t - m_pi**2) / m_rho
+    A_rho_eta = g_eta_NN * g_eta_gam_rho * F(L_eta_NN,m_eta) * F(L_eta_gam_rho,m_eta) / (t - m_eta**2) / m_rho
+    A_rho = A_rho_pi + A_rho_eta
+
+    A_omega_pi = g_pi_NN * g_pi_gam_omega * F(L_pi_NN,m_pi) * F(L_pi_gam_omega,m_pi) / (t - m_pi**2) / m_omega
+    A_omega_eta = g_eta_NN * g_eta_gam_omega * F(L_eta_NN,m_eta) * F(L_eta_gam_omega,m_eta) / (t - m_eta**2) / m_omega
+    A_omega = A_omega_pi + A_omega_eta
+
+    A_phi_pi = g_pi_NN * g_pi_gam_phi * F(L_pi_NN,m_pi) * F(L_pi_gam_phi,m_pi) / (t - m_pi**2) / m_phi
+    A_phi_eta = g_eta_NN * g_eta_gam_phi * F(L_eta_NN,m_eta) * F(L_eta_gam_phi,m_eta) / (t - m_eta**2) / m_phi
+    A_phi = A_phi_pi + A_phi_eta
+    
+    prefactor = np.pi * alpha_EM * np.abs(t) * (t - mX**2)**2 / (4 * s**2)
+    
+    dsig_dt = prefactor * np.abs(C_rho * A_rho + C_omega * A_omega + C_phi * A_phi)**2
+    
+    return dsig_dt * units
+
 def dsig_dt_B(W,t,params,mB):
     
     return dsig_dt_B_plus(W,t,params,mB) + dsig_dt_B_minus(W,t,params,mB)
+
+def dsig_dt_X(W,t,params,mX,xq):
+    
+    return dsig_dt_X_plus(W,t,params,mX,xq) + dsig_dt_X_minus(W,t,params,mX,xq)
 
 def sig_B(W,mB,params):
     return sig(dsig_dt_B,W,params,mB)
@@ -806,7 +915,6 @@ def dsigL_dt_phi_plus(W,t,Q2,params):
     
     return prefactor * terms * units
 
-@njit
 def dsigT_dt_B_plus(W,t,Q2,params,mB):
     
     if W < mB + mp:
@@ -818,9 +926,11 @@ def dsigT_dt_B_plus(W,t,Q2,params,mB):
     s0 = 1/alpha_prime_P
     alpha_P = alpha_P_0 + t/s0
     exponent = 2*alpha_P - 2 
+
+    a_f2_corr, b_f2_corr = f2_corr(params, s, t)
     
-    a_P_omega_omega = params[13]
-    b_P_omega_omega = params[8]
+    a_P_omega_omega = params[13] + a_f2_corr
+    b_P_omega_omega = params[8] + b_f2_corr
     B_omega = params[10]
     
     a_P_phi_phi = params[14]
@@ -849,8 +959,64 @@ def dsigT_dt_B_plus(W,t,Q2,params,mB):
     terms += 2 * (mB**2 - Q2) * np.real(a_P_gamma_B * np.conjugate(b_P_gamma_B))
     
     return prefactor * terms * units
-   
-@njit
+    
+def dsigT_dt_X_plus(W,t,Q2,params,mX,xq):
+
+    # Light quark charges
+    xu, xd, xs = xq
+    
+    if W < mX + mp:
+        return 0.0
+
+    s = W**2
+    
+    alpha_P_0 = params[12]
+    alpha_P = alpha_P_0 + alpha_prime_P * t
+    exponent = 2*alpha_P - 2 
+
+    a_f2_corr, b_f2_corr = f2_corr(params, s, t)
+
+    # Changed to include rho meson and f2
+    a_P_rho_rho = params[18] + a_f2_corr
+    b_P_rho_rho = params[17] + b_f2_corr
+    B_rho = params[19]
+    
+    a_P_omega_omega = params[13] + a_f2_corr
+    b_P_omega_omega = params[8] + b_f2_corr
+    B_omega = params[10]
+    
+    a_P_phi_phi = params[14]
+    b_P_phi_phi = params[9]
+    B_phi = params[11]
+    
+    F_rho_1 = 1/(1 - mX**2/m_rho**2 - 1j*Gamma_rho/m_rho)
+    F_rho_2 = 1/(1 + Q2/m_rho**2 - 1j*Gamma_rho/m_rho)
+
+    F_omega_1 = 1/(1 - mX**2/m_omega**2 - 1j*Gamma_omega/m_omega)
+    F_omega_2 = 1/(1 + Q2/m_omega**2 - 1j*Gamma_omega/m_omega)
+    
+    F_phi_1 = 1/(1 - mX**2/m_phi**2 - 1j*Gamma_phi/m_phi)
+    F_phi_2 = 1/(1 + Q2/m_phi**2 - 1j*Gamma_phi/m_phi)
+    
+    F_p_rho = np.exp(0.5*B_rho*t)
+    F_p_omega = np.exp(0.5*B_omega*t)
+    F_p_phi = np.exp(0.5*B_phi*t)
+    
+    C_rho = f_rho**2 / m_rho**2 * F_rho_1 * F_rho_2 * F_p_rho * 3 / 2 * (xu - xd)
+    C_omega = f_omega**2/m_omega**2 * F_omega_1 * F_omega_2 * F_p_omega * (xu + xd) / 2
+    C_phi = - f_phi**2/m_phi**2 * F_phi_1 * F_phi_2 * F_p_phi * xs
+    
+    a_P_gamma_X = C_rho * a_P_rho_rho + C_omega * a_P_omega_omega + C_phi * a_P_phi_phi
+    b_P_gamma_X = C_rho * a_P_rho_rho + C_omega * b_P_omega_omega + C_phi * b_P_phi_phi
+    
+    prefactor = np.pi * alpha_EM * beta_PNN**2 * (alpha_prime_P * s)**exponent * (1 + 0.5 * Q2/s)**2
+    
+    terms = np.abs(a_P_gamma_X)**2 * ((mX**2 - t)**2 - 2 * Q2 * mX**2 + Q2**2)
+    terms += np.abs(b_P_gamma_X)**2 
+    terms += 2 * (mX**2 - Q2) * np.real(a_P_gamma_X * np.conjugate(b_P_gamma_X))
+    
+    return prefactor * terms * units
+
 def dsigL_dt_B_plus(W,t,Q2,params,mB):
     
     if W < mB + mp:
@@ -862,8 +1028,9 @@ def dsigL_dt_B_plus(W,t,Q2,params,mB):
     s0 = 1/alpha_prime_P
     alpha_P = alpha_P_0 + t/s0
     exponent = 2*alpha_P - 2 
-    
-    a_P_omega_omega = params[13]
+
+    a_f2_corr, b_f2_corr = f2_corr(params, s, t)
+    a_P_omega_omega = params[13] + a_f2_corr
     B_omega = params[10]
     
     a_P_phi_phi = params[14]
@@ -889,6 +1056,57 @@ def dsigL_dt_B_plus(W,t,Q2,params,mB):
     
     return prefactor * terms * units
 
+def dsigL_dt_X_plus(W,t,Q2,params,mX,xq):
+    
+    # Light quark charges
+    xu, xd, xs = xq
+    
+    if W < mX + mp:
+        return 0.0
+
+    s = W**2
+    
+    alpha_P_0 = params[12]
+    alpha_P = alpha_P_0 + alpha_prime_P * t
+    exponent = 2*alpha_P - 2 
+
+    a_f2_corr, b_f2_corr = f2_corr(params, s, t)
+
+    # Changed to include rho meson and f2
+    a_P_rho_rho = params[18] + a_f2_corr
+    B_rho = params[19]
+    
+    a_P_omega_omega = params[13] + a_f2_corr
+    B_omega = params[10]
+    
+    a_P_phi_phi = params[14]
+    B_phi = params[11]
+    
+    F_rho_1 = 1/(1 - mX**2/m_rho**2 - 1j*Gamma_rho/m_rho)
+    F_rho_2 = 1/(1 + Q2/m_rho**2 - 1j*Gamma_rho/m_rho)
+
+    F_omega_1 = 1/(1 - mX**2/m_omega**2 - 1j*Gamma_omega/m_omega)
+    F_omega_2 = 1/(1 + Q2/m_omega**2 - 1j*Gamma_omega/m_omega)
+    
+    F_phi_1 = 1/(1 - mX**2/m_phi**2 - 1j*Gamma_phi/m_phi)
+    F_phi_2 = 1/(1 + Q2/m_phi**2 - 1j*Gamma_phi/m_phi)
+    
+    F_p_rho = np.exp(0.5*B_rho*t)
+    F_p_omega = np.exp(0.5*B_omega*t)
+    F_p_phi = np.exp(0.5*B_phi*t)
+    
+    C_rho = f_rho**2 / m_rho**2 * F_rho_1 * F_rho_2 * F_p_rho * 3 / 2 * (xu - xd)
+    C_omega = f_omega**2/m_omega**2 * F_omega_1 * F_omega_2 * F_p_omega * (xu + xd) / 2
+    C_phi = - f_phi**2/m_phi**2 * F_phi_1 * F_phi_2 * F_p_phi * xs
+    
+    a_P_gamma_X = C_rho * a_P_rho_rho + C_omega * a_P_omega_omega + C_phi * a_P_phi_phi
+    
+    prefactor = 4*np.pi * alpha_EM * beta_PNN**2 * (alpha_prime_P * s)**exponent * (1 + 0.5 * Q2/s)**2
+    
+    terms = np.abs(a_P_gamma_X)**2 * (mX**2 - t) * Q2 
+    
+    return prefactor * terms * units
+    
 @njit
 def dsigT_dt_omega_minus(W,t,Q2,params):
 
@@ -1011,6 +1229,63 @@ def dsigT_dt_B_minus(W,t,Q2,params,mB):
     dsig_dt = prefactor * np.abs(A_phi_tot + A_omega_tot)**2
     
     return dsig_dt * units
+
+def dsigT_dt_X_minus(W,t,Q2,params,mX,xq):
+
+    # Light quark charges
+    xu, xd, xs = xq
+    if W < mX + mp:
+        return 0.0
+
+    s = W**2
+    
+    g_pi_NN = params[0]
+    g_eta_NN = params[1]
+    L_pi_NN = params[2]
+    L_eta_NN = params[3]
+    L_pi_gam_omega = params[4]
+    L_eta_gam_omega = params[5]
+    L_pi_gam_phi = params[6]
+    L_eta_gam_phi = params[7]
+    L_pi_gam_rho = params[15]
+    L_eta_gam_rho = params[16]
+
+    def F(Lambda,m): 
+        return (Lambda**2 - m**2) / (Lambda**2 - t)
+
+    # Breit-Wigner form factors
+    # Modify due to invariant mass-dependent widths
+    F_rho_1 = 1/(1 - mX**2/m_rho**2 - 1j*Gamma_rho/m_rho)
+    F_rho_2 = 1/(1 + Q2/m_rho**2 - 1j*Gamma_rho/m_rho)
+    
+    F_omega_1 = 1/(1 - mX**2/m_omega**2 - 1j*Gamma_omega/m_omega)
+    F_omega_2 = 1/(1 + Q2/m_omega**2 - 1j*Gamma_omega/m_omega)
+    
+    F_phi_1 = 1/(1 - mX**2/m_phi**2 - 1j*Gamma_phi/m_phi)
+    F_phi_2 = 1/(1 + Q2/m_phi**2 - 1j*Gamma_phi/m_phi)
+    
+    # Coefficients
+    C_rho = - f_rho * F_rho_1 * F_rho_2 / m_rho * (xu - xd) / np.sqrt(2) 
+    C_omega = - f_omega * F_omega_1 * F_omega_2 / m_omega * (xu + xd) / np.sqrt(2) 
+    C_phi = - f_phi * F_phi_1 * F_phi_2 / m_phi * xs
+    
+    A_rho_pi = g_pi_NN * g_pi_gam_rho * F(L_pi_NN,m_pi) * F(L_pi_gam_rho,m_pi) / (t - m_pi**2) / m_rho
+    A_rho_eta = g_eta_NN * g_eta_gam_rho * F(L_eta_NN,m_eta) * F(L_eta_gam_rho,m_eta) / (t - m_eta**2) / m_rho
+    A_rho = A_rho_pi + A_rho_eta
+
+    A_omega_pi = g_pi_NN * g_pi_gam_omega * F(L_pi_NN,m_pi) * F(L_pi_gam_omega,m_pi) / (t - m_pi**2) / m_omega
+    A_omega_eta = g_eta_NN * g_eta_gam_omega * F(L_eta_NN,m_eta) * F(L_eta_gam_omega,m_eta) / (t - m_eta**2) / m_omega
+    A_omega = A_omega_pi + A_omega_eta
+
+    A_phi_pi = g_pi_NN * g_pi_gam_phi * F(L_pi_NN,m_pi) * F(L_pi_gam_phi,m_pi) / (t - m_pi**2) / m_phi
+    A_phi_eta = g_eta_NN * g_eta_gam_phi * F(L_eta_NN,m_eta) * F(L_eta_gam_phi,m_eta) / (t - m_eta**2) / m_phi
+    A_phi = A_phi_pi + A_phi_eta
+    
+    prefactor = np.pi * alpha_EM * np.abs(t) * ((t - mX**2)**2 + Q2**2 + 2 * Q2 * mX**2) / (4 * W**2 * (W**2 + Q2))
+    
+    dsig_dt = prefactor * np.abs(C_rho * A_rho + C_omega * A_omega + C_phi * A_phi)**2
+    
+    return dsig_dt * units
     
 @njit
 def dsigL_dt_omega_minus(W,t,Q2,params):
@@ -1129,12 +1404,69 @@ def dsigL_dt_B_minus(W,t,Q2,params,mB):
     A_phi_eta = g_eta_NN * g_eta_gam_phi * F(L_eta_NN,m_eta) * F(L_eta_gam_phi,m_eta) / (t - m_eta**2)
     A_phi_tot = (A_phi_pi + A_phi_eta) * f_phi * F_phi_1 * F_phi_2 / m_phi**2
     
-    prefactor = np.pi * alpha_EM * np.abs(t) * t**2 * Q2 / (9 * s * (s + Q2))
+    prefactor = np.pi * alpha_EM * t**2 * Q2 / (9 * s * (s + Q2))
     
     dsig_dt = prefactor * np.abs(A_phi_tot + A_omega_tot)**2
     
     return dsig_dt * units
 
+def dsigL_dt_X_minus(W,t,Q2,params,mX,xq):
+
+    # Light quark charges
+    xu, xd, xs = xq
+    if W < mX + mp:
+        return 0.0
+
+    s = W**2
+    
+    g_pi_NN = params[0]
+    g_eta_NN = params[1]
+    L_pi_NN = params[2]
+    L_eta_NN = params[3]
+    L_pi_gam_omega = params[4]
+    L_eta_gam_omega = params[5]
+    L_pi_gam_phi = params[6]
+    L_eta_gam_phi = params[7]
+    L_pi_gam_rho = params[15]
+    L_eta_gam_rho = params[16]
+
+    def F(Lambda,m): 
+        return (Lambda**2 - m**2) / (Lambda**2 - t)
+
+    # Breit-Wigner form factors
+    # Modify due to invariant mass-dependent widths
+    F_rho_1 = 1/(1 - mX**2/m_rho**2 - 1j*Gamma_rho/m_rho)
+    F_rho_2 = 1/(1 + Q2/m_rho**2 - 1j*Gamma_rho/m_rho)
+    
+    F_omega_1 = 1/(1 - mX**2/m_omega**2 - 1j*Gamma_omega/m_omega)
+    F_omega_2 = 1/(1 + Q2/m_omega**2 - 1j*Gamma_omega/m_omega)
+    
+    F_phi_1 = 1/(1 - mX**2/m_phi**2 - 1j*Gamma_phi/m_phi)
+    F_phi_2 = 1/(1 + Q2/m_phi**2 - 1j*Gamma_phi/m_phi)
+    
+    # Coefficients
+    C_rho = - f_rho * F_rho_1 * F_rho_2 / m_rho * (xu - xd) / np.sqrt(2) 
+    C_omega = - f_omega * F_omega_1 * F_omega_2 / m_omega * (xu + xd) / np.sqrt(2) 
+    C_phi = - f_phi * F_phi_1 * F_phi_2 / m_phi * xs
+    
+    A_rho_pi = g_pi_NN * g_pi_gam_rho * F(L_pi_NN,m_pi) * F(L_pi_gam_rho,m_pi) / (t - m_pi**2) / m_rho
+    A_rho_eta = g_eta_NN * g_eta_gam_rho * F(L_eta_NN,m_eta) * F(L_eta_gam_rho,m_eta) / (t - m_eta**2) / m_rho
+    A_rho = A_rho_pi + A_rho_eta
+
+    A_omega_pi = g_pi_NN * g_pi_gam_omega * F(L_pi_NN,m_pi) * F(L_pi_gam_omega,m_pi) / (t - m_pi**2) / m_omega
+    A_omega_eta = g_eta_NN * g_eta_gam_omega * F(L_eta_NN,m_eta) * F(L_eta_gam_omega,m_eta) / (t - m_eta**2) / m_omega
+    A_omega = A_omega_pi + A_omega_eta
+
+    A_phi_pi = g_pi_NN * g_pi_gam_phi * F(L_pi_NN,m_pi) * F(L_pi_gam_phi,m_pi) / (t - m_pi**2) / m_phi
+    A_phi_eta = g_eta_NN * g_eta_gam_phi * F(L_eta_NN,m_eta) * F(L_eta_gam_phi,m_eta) / (t - m_eta**2) / m_phi
+    A_phi = A_phi_pi + A_phi_eta
+    
+    prefactor = np.pi * alpha_EM * t**2 * Q2 / (s * (s + Q2))
+    
+    dsig_dt = prefactor * np.abs(C_rho * A_rho + C_omega * A_omega + C_phi * A_phi)**2
+    
+    return dsig_dt * units
+    
 @np.vectorize(excluded=[3])
 def dsigT_dt_omega(W,t,Q2,params):
     return dsigT_dt_omega_plus(W,t,Q2,params) + dsigT_dt_omega_minus(W,t,Q2,params)
@@ -1222,6 +1554,24 @@ def sigT_B(W,Q2,mB,params):
 
 def sigL_B(W,Q2,mB,params):
     return sig_electro(dsigL_dt_B,W,Q2,params,mB)
+
+def sigT_X_plus(W,Q2,mX,params,xq):
+    return sig_electro(dsigT_dt_X_plus,W,Q2,params,mX,xq)
+
+def sigL_X_plus(W,Q2,mX,params,xq):
+    return sig_electro(dsigL_dt_X_plus,W,Q2,params,mX)
+
+def sigT_X_minus(W,Q2,mX,params,xq):
+    return sig_electro(dsigT_dt_X_minus,W,Q2,params,mX,xq)
+
+def sigL_X_minus(W,Q2,mX,params):
+    return sig_electro(dsigL_dt_X_minus,W,Q2,params,mX,xq)
+
+def sigT_X(W,Q2,mX,params):
+    return sig_electro(dsigT_dt_X,W,Q2,params,mX,xq)
+
+def sigL_X(W,Q2,mX,params):
+    return sig_electro(dsigL_dt_X,W,Q2,params,mX,xq)
 
 def sigT_omega(W,Q2,params):
     return sig_electro(dsigT_dt_omega,W,Q2,params,m_omega)
@@ -1330,6 +1680,50 @@ def sig_gamma_proton_tot(s,params):
     term3 = 2 * f_phi**2 / m_phi**2 * sigma_T_phi / 9
 
     return 2 * np.pi * alpha_EM * (term1 + term2 + term3)    
+
+def dsigX_dEX_dcosX(s_tot, EX, cosX, params, mX, xq):
+
+    # Threshold
+    if EX <= mX:
+        return 0.0
+    
+    # Kinematic variables
+    qX = np.sqrt(EX**2 - mX**2)
+    nu = (mp * EX - 0.5 * mX**2) / (mp - EX + qX * cosX)
+    t = - 2 * mp * (nu - EX)
+    E_beam = (s_tot - mp**2) / (2 * mp)
+    y = nu / E_beam
+    s = mp**2 + 2 * mp * nu
+
+    # Other threshold
+    if (nu <= EX) or (nu >= E_beam) or (nu <= 0):
+        return 0.0
+
+    W = np.sqrt(s)
+    
+    # Jacobian dcos_thetaX / dt
+    J = (mp - EX) / (2 * mp * qX * nu) + cosX / (2 * mp * nu)
+
+    # Effective number of photons
+    Q2min = me**2 * y**2 / (1 - y)
+    Q2max = 1
+    if Q2min >= Q2max:
+        return 0.0
+    
+    dN_dy = alpha_EM / (2 * np.pi) * (1 + (1 - y)**2) / y * np.log(Q2max / Q2min)
+
+    return 1 / J * dN_dy / E_beam * dsig_dt_X(W,t,params,mX,xq)
+
+def dsigA_dEA(s_tot, EA, mA):
+
+    # Threshold
+    if EA <= mA:
+        return 0.0
+
+    E_beam = (s_tot - mp**2) / (2 * mp)
+
+    xe = EA / Ebeam
+    dsig_dxe = 4 * alpha_EM**3 * np.sqrt(1 - mA**2 / Ebeam**2) * (1 - xe + xe**2) / (mA**2 * (1 - xe) / xe + me**2 * xe) * units    
 
 # Organize cross sections in a class
 
