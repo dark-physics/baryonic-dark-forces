@@ -188,6 +188,24 @@ def decay_profile(mX,alphaX,x):
 
   gamma_tot = np.sum(np.append(fermion_decays,hadron_decays))
 
+  if gamma_tot == 0: # theoretically, mX>0 should never resolve gamma_tot=0, but it does due to the mX < 2*me condition prof told me to include
+      return {
+          'gamma_tot':0,
+          'BR_ee': 0,
+          'BR_mumu':0,
+          'BR_nunu': 0,
+          'BR_pi_plus_pi_minus':0,
+          'BR_pi_plus_pi_minus_pi_plus_pi_minus':0,
+          'BR_pi_plus_pi_minus_pi0':0,
+          'BR_pi_plus_pi_minus_pi0_pi0':0,
+          'BR_pi0_gamma':0,
+          'BR_K_K': 0,
+          'BR_K_K_pi': 0,
+          'BR_rho_other': 0,
+          'BR_phi_other': 0,
+          'BR_omega_other': 0
+      }
+
   BR_ee = fermion_decays[0] / gamma_tot
   BR_mumu = fermion_decays[1] / gamma_tot
   BR_nunu_e = fermion_decays[2] / gamma_tot
@@ -242,7 +260,8 @@ def gamma_ff(mX,alphaX,x):
     gammas = Cf * alphaX * x_leptons**2 * mX * (1 + 2*mf**2/mX**2) * np.sqrt(1- 4*mf**2/mX**2) / 3
     assert not np.isnan(gammas).any()
   except AssertionError:
-    gammas[1] = 0
+    gammas[1] = 0 #its only the muon one that can cause this
+    print('fixed')
 
   return gammas
 
@@ -264,7 +283,7 @@ def gamma_hadrons(mX,alphaX,x):
   '''
   QX = np.diag([x[0] , x[1] , x[2]] , 0)
 
-  return alphaX*mX/3*(R_X_rho(mX,QX) + R_X_omega(mX,QX) + R_X_phi(mX,QX) + R_X_omega_minus_phi(mX)) #this entire line might be garbage
+  return alphaX*mX/3*(R_X_rho(mX,QX) + R_X_omega(mX,QX) + R_X_phi(mX,QX) + R_X_omega_minus_phi(mX))
 
 # eq 2.18 Ilten ##
 def R_X_rho(mX,QX):
@@ -508,7 +527,7 @@ def plot_partial_widths(x,alphaX):
 
 def plot_decay_length(alphaX,x,title):
     '''
-    Plots proper decay length for mX on (0,2) GeVs.
+    Plots proper decay length for mX on (0,2) GeVs
     '''
     num = 1000
     mass_range = np.linspace(0,2,num)
@@ -519,7 +538,7 @@ def plot_decay_length(alphaX,x,title):
 
     lifetime_range = 1/gamma_tot_range
 
-    L_range = lifetime_range * 0.197 # fm
+    L_range = lifetime_range * 0.197 / alphaX # fm # 1/alphaX factor
 
     plt.plot(mass_range,L_range)
     plt.yscale('log')
@@ -530,14 +549,18 @@ def plot_decay_length(alphaX,x,title):
 
 def get_decay_length(mX,alphaX,x):
   '''
-  returns: float, proper decay length. [femtometers]
+  returns: float, proper decay length
   '''
-  gamma_tot = decay_profile(mX,alphaX,x).get('gamma_tot') # Units: GeVs
-  return 0.197 / gamma_tot # femtometers
+  gamma_tot = decay_profile(mX,alphaX,x).get('gamma_tot')
+  print("gamma_tot:", repr(gamma_tot), type(gamma_tot))
 
-"""#Notes"""
+  if gamma_tot == 0:
+    return np.inf
+  else:
+    return 0.197 / gamma_tot / alphaX # fm # 1/alphaX factor
 
-'''
+"""#Notes
+
 Hadronic state array
 0: pi+ pi-
 1: pi+ pi- pi+ pi-
@@ -558,3 +581,8 @@ R_X_V_hadrons Serendipity eq2.18
 darkast data
 https://gitlab.com/darkcast/releases/-/tree/master/darkcast/data
 '''
+"""
+
+# plot_branching_ratios(1/137,gauge_couplings['Chargephobic'],'Chargephobic')
+# plot_branching_ratios_individual(1/137,gauge_couplings['Chargephobic'],'Chargephobic')
+# plot_decay_length(1e-8,gauge_couplings['Chargephobic'],'Chargephobic alphaX=1e-8')
