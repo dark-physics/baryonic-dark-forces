@@ -261,7 +261,7 @@ def gamma_ff(mX,alphaX,x):
     assert not np.isnan(gammas).any()
   except AssertionError:
     gammas[1] = 0 #its only the muon one that can cause this
-    print('fixed')
+    # print('fixed') diagnosis
 
   return gammas
 
@@ -552,7 +552,6 @@ def get_decay_length(mX,alphaX,x):
   returns: float, proper decay length
   '''
   gamma_tot = decay_profile(mX,alphaX,x).get('gamma_tot')
-  print("gamma_tot:", repr(gamma_tot), type(gamma_tot))
 
   if gamma_tot == 0:
     return np.inf
